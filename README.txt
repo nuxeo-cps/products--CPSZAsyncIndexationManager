@@ -27,10 +27,15 @@ Install the CPSZAsyncIndexationManager into your Zope instance Products::
 
   svn co https://svn.nuxeo.org/pub/CPS3/products/CPSZAsyncIndexationManager/trunk CPSZAsyncIndexationManager
 
+In your zeo zasync client setup the controler and configuration::
+  cp CPSZAsyncIndexationManager/zeo-zasync/bin/zasyncctl ../bin
+  cp CPSZAsyncIndexationManager/zeo-zasync/etc/zasync.conf ../etc/
+
+Edit zasyncctl and zasync.conf to setup your paths ()
 
 All zeo clients should have the same set of Products.
 
-Start all your zss and zeos.
+Start zope: zope server, zeo client(s) then the zasync zeo using zasyncctl.
 
 From the zmi add an 'Asynchronous Call Manager' in the root of your Zope.
 
