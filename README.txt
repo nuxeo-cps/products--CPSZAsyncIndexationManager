@@ -6,6 +6,8 @@ $Id$
 This product patch the CPSCore IndexationManager and use zasync if
 installed to do indexation asynchronously.
 
+This is yet an experimental product do not use it in production.
+
 
 Installation
 ------------
