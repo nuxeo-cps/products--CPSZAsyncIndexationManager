@@ -1,0 +1,71 @@
+#!/bin/bash
+
+#
+# zasync ctl
+#
+PYTHON="/usr/bin/python"
+ZOPE_HOME="/usr/local/Zope-2.9.1"
+INSTANCE_HOME="/home/zopes/zeo-zasync"
+SOFTWARE_HOME="/usr/local/Zope-2.9.1/lib/python"
+CONFIG_FILE="${INSTANCE_HOME}/etc/zasync.conf"
+CLIENT_HOME="${INSTANCE_HOME}/Products/zasync/client"
+PYTHONPATH="${CLIENT_HOME}:${SOFTWARE_HOME}"
+export PYTHONPATH
+
+RETVAL=0
+
+function start() {
+    OUTPUT_LOG=$INSTANCE_HOME/log/zasync_event.log
+    echo "Starting ZASYNC ZEO SERVER: see $OUTPUT_LOG"
+    exec $PYTHON -c "from zasync import run;run('$CONFIG_FILE', version=2.9)" &> $OUTPUT_LOG &
+    status
+}
+
+function stop() {
+    echo "Stop ZASYNC"
+    pid=`ps --format="pid command" | grep zasync | grep python | cut -d\  -f2`
+    if [ -z $pid ]; then
+        echo "zasync not running."
+    else
+        res=`kill -9 $pid`
+        echo "zasync killed."
+    fi
+}
+
+function status() {
+    pid=`ps --format="pid command" | grep "zasync" | grep python | cut -d\  -f2`
+    if [ ! -z $pid ] ; then
+        echo "zasync running; pid=$pid"
+    else
+        echo "zasync not running."
+    fi
+}
+
+function logtail() {
+    tail -f $INSTANCE_HOME/log/zasync_event.log
+}
+
+# See how we were called.
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+    status
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    logtail)
+    logtail
+    ;;
+    *)
+        echo $"Usage: $0 {start|stop|restart|status}"
+        RETVAL=1
+esac
+
+exit $RETVAL
