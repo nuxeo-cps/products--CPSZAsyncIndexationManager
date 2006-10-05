@@ -1,51 +1,58 @@
 #!/bin/bash
-
 #
 # zasync ctl
 #
+
 PYTHON="/usr/bin/python"
 ZOPE_HOME="/usr/local/Zope-2.9.1"
 INSTANCE_HOME="/home/zopes/zeo-zasync"
 SOFTWARE_HOME="/usr/local/Zope-2.9.1/lib/python"
+
 CONFIG_FILE="${INSTANCE_HOME}/etc/zasync.conf"
 CLIENT_HOME="${INSTANCE_HOME}/Products/zasync/client"
 PYTHONPATH="${CLIENT_HOME}:${SOFTWARE_HOME}"
+PID_FILE="${INSTANCE_HOME}/var/zasync.pid"
 export PYTHONPATH
 
-RETVAL=0
-
 function start() {
-    OUTPUT_LOG=$INSTANCE_HOME/log/zasync_event.log
+    PID=`cat $PID_FILE`
+    ps -p $PID &> /dev/null && echo "zasync already running pid=$PID" && exit 0
+    OUTPUT_LOG=$INSTANCE_HOME/log/zasync_output.log
     echo "Starting ZASYNC ZEO SERVER: see $OUTPUT_LOG"
-    exec $PYTHON -c "from zasync import run;run('$CONFIG_FILE', version=2.9)" &> $OUTPUT_LOG &
+    exec $PYTHON -c "from zasync import run;import os;open('$PID_FILE', 'w+').write(str(os.getpid()));run('$CONFIG_FILE', version=2.9)" &> $OUTPUT_LOG &
+    sleep 1
     status
 }
 
 function stop() {
-    echo "Stop ZASYNC"
-    pid=`ps --format="pid command" | grep zasync | grep python | cut -d\  -f2`
-    if [ -z $pid ]; then
-        echo "zasync not running."
+    PID=`cat $PID_FILE`
+    ps -p $PID > /dev/null
+    if [ $? = 0 ]; then
+        echo -n "Stoping zasync pid=$PID: "
+        kill $PID
+        echo -n "."
+        sleep 1
+        kill -9 $PID &> /dev/null
+        echo -n ". "
+        echo "zasync stopped."
+        exit 0
     else
-        res=`kill -9 $pid`
-        echo "zasync killed."
+        echo "zasync not running"
+        exit -1
     fi
 }
 
 function status() {
-    pid=`ps --format="pid command" | grep "zasync" | grep python | cut -d\  -f2`
-    if [ ! -z $pid ] ; then
-        echo "zasync running; pid=$pid"
-    else
-        echo "zasync not running."
-    fi
+    PID=`cat $PID_FILE`
+    ps -p $PID > /dev/null && echo "zasync running pid=$PID" && exit 0
+    echo "zasync not running."
+    exit -1
 }
 
 function logtail() {
-    tail -f $INSTANCE_HOME/log/zasync_event.log
+    tail -f $INSTANCE_HOME/log/zasync.log
 }
 
-# See how we were called.
 case "$1" in
     start)
         start
@@ -54,18 +61,16 @@ case "$1" in
         stop
         ;;
     status)
-    status
+        status
         ;;
     restart)
         stop
         start
         ;;
     logtail)
-    logtail
-    ;;
+        logtail
+        ;;
     *)
-        echo $"Usage: $0 {start|stop|restart|status}"
-        RETVAL=1
+        echo $"Usage: $0 {start|stop|restart|status|logtail}"
+        exit 1
 esac
-
-exit $RETVAL
