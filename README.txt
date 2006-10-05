@@ -23,7 +23,7 @@ Install zasync from nuxeo svn repo into your Zope instance Products::
 
 Install nuxeo persistentqueue into your Zope instance Products::
 
-  svn co https://svn.nuxeo.org/pub/Zope3/nuxeo.persistentqueue/trunk nuxPersistantQueue
+  svn co https://svn.nuxeo.org/pub/Zope3/nuxeo.persistentqueue/trunk nuxPersistentQueue
 
 Install the CPSZAsyncIndexationManager into your Zope instance Products::
 
