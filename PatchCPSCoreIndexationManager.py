@@ -27,10 +27,12 @@ from Products.CPSCore.ProxyBase import ProxyBase
 
 logger = logging.getLogger("PatchCPSCoreIndexationManager")
 
+# Patching ProxyBase
 ProxyBase.do_reindexObject = ProxyBase._reindexObject
 ProxyBase.do_reindexObjectSecurity = ProxyBase._reindexObjectSecurity
 logger.info('Patching ProxyBase to add do_reindexObject* methods.')
 
+# Patching IndexationManager
 def process(self, ob, idxs, secu):
     """Process an object, to reindex it.
 
@@ -56,6 +58,7 @@ def process(self, ob, idxs, secu):
                          (idxs and 'allowedRolesAndUsers' in idxs))
             logger.debug("reindexObjectSecurity %r skip=%s" % (ob, skip_self))
             ob._reindexObjectSecurity(skip_self=skip_self)
+        return
 
     # The indexation later tries to index the changed language revision.
     # For this it normally uses the AcceptLanguage method on the
