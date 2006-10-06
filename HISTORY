@@ -1,0 +1,20 @@
+===========================================================
+Package: CPSZAsyncIndexationManager 0.1.0
+===========================================================
+First release built by: ben at: 2006-10-06T15:23:13
+SVN Tag: https://svn.nuxeo.org/pub/CPS3/products/CPSZAsyncIndexationManager/tags/0.1.0
+Build from: https://svn.nuxeo.org/pub/CPS3/products/CPSZAsyncIndexationManager/trunk@49406
+
+Requires
+~~~~~~~~
+-
+New features
+~~~~~~~~~~~~
+-
+Bug fixes
+~~~~~~~~~
+-
+New internal features
+~~~~~~~~~~~~~~~~~~~~~
+- First package
+
