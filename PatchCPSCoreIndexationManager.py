@@ -32,6 +32,23 @@ ProxyBase.do_reindexObject = ProxyBase._reindexObject
 ProxyBase.do_reindexObjectSecurity = ProxyBase._reindexObjectSecurity
 logger.info('Patching ProxyBase to add do_reindexObject* methods.')
 
+
+def getZAsyncUsage(portal):
+    """Return
+    None       if zasync is not installed,
+    'security' if zasync is used only for reindexObjectSecurity,
+    'all'      use zasync for reindexObject and reindexObjectSecurity.
+    """
+    root = portal.getPhysicalRoot()
+    if 'asynchronous_call_manager' not in root.objectIds():
+        return None
+    async_type = getattr(portal, 'use_async_index_manager', None)
+    if not async_type:
+        return None
+    if 'security' in str(async_type.lower()):
+        return 'security'
+    return 'all'
+
 # Patching IndexationManager
 def process(self, ob, idxs, secu):
     """Process an object, to reindex it.
@@ -41,6 +58,7 @@ def process(self, ob, idxs, secu):
     # even if the value we have is still wrapped.
     # Re-acquire it from the root
     # FIXME: do better, by treating also indexObject/unindexObject
+
     root = ob.getPhysicalRoot()
     path = ob.getPhysicalPath()
     old_ob = ob
@@ -48,16 +66,19 @@ def process(self, ob, idxs, secu):
     if ob is None:
         logger.debug("Object %r disappeared" % old_ob)
         return
-    if 'asynchronous_call_manager' not in root.objectIds():
-        # ZAsync not installed. Do it synchronously:
-        if idxs is not None:
-            logger.debug("reindexObject %r idxs=%r" % (ob, idxs))
-            ob._reindexObject(idxs=idxs)
-        if secu:
-            skip_self = (idxs == [] or
-                         (idxs and 'allowedRolesAndUsers' in idxs))
-            logger.debug("reindexObjectSecurity %r skip=%s" % (ob, skip_self))
-            ob._reindexObjectSecurity(skip_self=skip_self)
+    utool = getToolByName(ob, 'portal_url')
+    portal = utool.getPortalObject()
+    async_usage = getZAsyncUsage(portal)
+
+    if idxs is not None and (not async_usage or async_usage != 'all'):
+        logger.debug("reindexObject %r idxs=%r" % (ob, idxs))
+        ob._reindexObject(idxs=idxs)
+    if not async_usage and secu:
+        skip_self = (idxs == [] or
+                     (idxs and 'allowedRolesAndUsers' in idxs))
+        logger.debug("reindexObjectSecurity %r skip=%s" % (ob, skip_self))
+        ob._reindexObjectSecurity(skip_self=skip_self)
+    if not async_usage:
         return
 
     # The indexation later tries to index the changed language revision.
@@ -66,7 +87,6 @@ def process(self, ob, idxs, secu):
     # this by adding a _cps_switch_language setting, basically telling
     # the proxy when accessed by zasync to switch language to the one
     # used by the real access.
-    utool = getToolByName(ob, 'portal_url')
     rpath = utool.getRelativeUrl(ob)
     lang = None
     if ob.REQUEST.has_key('_cps_switch_language'):
@@ -81,8 +101,7 @@ def process(self, ob, idxs, secu):
     if lang is None:
         # Couldn't find any language, use proxy default.
         lang = ob._default_language
-
-    if idxs is not None:
+    if idxs is not None and async_usage == 'all':
         logger.debug("zasync call reindexObject %r idxs=%r" % (ob, idxs))
         root.asynchronous_call_manager.putCall(
             'zope_exec', path, {'idxs': idxs,
